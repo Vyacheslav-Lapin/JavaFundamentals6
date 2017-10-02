@@ -1,3 +1,0 @@
-module oop {
-    requires operators;
-}

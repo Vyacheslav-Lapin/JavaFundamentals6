@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public abstract class GeometricObject {
+
     public abstract double getArea();
 
     public static void main(String... args) {
