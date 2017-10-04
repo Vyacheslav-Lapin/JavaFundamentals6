@@ -1,23 +1,36 @@
 package com.epam;
 
-import java.io.IOException;
+import lombok.SneakyThrows;
+import lombok.experimental.Delegate;
+import lombok.val;
+
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
-import java.util.Properties;
 
 public class PropFactory {
 
-    public static <T> T getObject(Class<T> aClass) {
-        Properties properties = new Properties();
+    static class Properties {
 
-        try {
-            properties.load(
-                    PropFactory.class.getResourceAsStream(
-                            String.format("/%s.properties", aClass.getSimpleName())));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        @Delegate
+        private java.util.Properties properties = new java.util.Properties();
+
+        @SneakyThrows
+        public Properties(String path) {
+            File file = new File(path);
+            if (!file.exists())
+                throw new RuntimeException("Нема файла такого - " + path);
+            try (val resourceAsStream = PropFactory.class.getResourceAsStream(path)) {
+                properties.load(resourceAsStream);
+            }
         }
+    }
+
+    public static <T> T getObject(Class<T> aClass) {
+        Properties properties = new Properties(
+                String.format("/%s.properties",
+                        PropFactory.class.getSimpleName()));
 
         //noinspection unchecked
         Constructor<T> constructor = (Constructor<T>) aClass.getConstructors()[0];
