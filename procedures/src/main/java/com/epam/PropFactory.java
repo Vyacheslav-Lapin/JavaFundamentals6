@@ -1,55 +1,77 @@
 package com.epam;
 
 import lombok.SneakyThrows;
-import lombok.experimental.Delegate;
+import lombok.experimental.UtilityClass;
 import lombok.val;
 
 import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.Map;
+import java.util.Properties;
+import java.util.function.*;
 
+@UtilityClass
 public class PropFactory {
 
-    static class Properties {
+    private static final Function<String, InputStream> toInputStream =
+            PropFactory.class::getResourceAsStream;
 
-        @Delegate
-        private java.util.Properties properties = new java.util.Properties();
+    private static final Function<String, String> toPath = name ->
+            String.format("/%s.properties", name);
 
-        @SneakyThrows
-        public Properties(String path) {
-            File file = new File(path);
-            if (!file.exists())
-                throw new RuntimeException("Нема файла такого - " + path);
-            try (val resourceAsStream = PropFactory.class.getResourceAsStream(path)) {
-                properties.load(resourceAsStream);
-            }
+    @SneakyThrows
+    private static Properties getProperties(String name) {
+        val path = toPath.apply(name);
+        assert new File(path).exists();
+
+        try (val resourceAsStream = toInputStream.apply(path)) {
+            val properties = new Properties();
+            properties.load(resourceAsStream);
+            return properties;
         }
     }
 
+    @SneakyThrows
     public static <T> T getObject(Class<T> aClass) {
-        Properties properties = new Properties(
-                String.format("/%s.properties",
-                        PropFactory.class.getSimpleName()));
+        val properties = getProperties(aClass.getSimpleName());
 
         //noinspection unchecked
-        Constructor<T> constructor = (Constructor<T>) aClass.getConstructors()[0];
-        Parameter[] parameters = constructor.getParameters();
-        Object[] args = new Object[parameters.length];
-        for (int i = 0; i < parameters.length; i++) {
-            Parameter param = parameters[i];
-            Class<?> type = param.getType();
-            if (type == Double.class || type == double.class) {
-                args[i] = Double.parseDouble(properties.getProperty(param.getName()));
-            } else if (type == Integer.class || type == int.class) {
-                args[i] = Integer.parseInt(properties.getProperty(param.getName()));
-            }//...
-        }
+        val constructor = (Constructor<T>) aClass.getConstructors()[0];
+        val parameters = constructor.getParameters();
+        int length = parameters.length;
+        val args = new Object[length];
+        for (int i = 0; i < length; i++)
+            args[i] = parse(parameters[i], properties::getProperty);
 
-        try {
-            return constructor.newInstance(args);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
+        return constructor.newInstance(args);
+    }
+
+    private static Map<Class<?>, Function<String, ?>> PARSERS =
+            Map.of(String.class, (Function<String, String>) s -> s,
+                    Double.class, (Function<String, Double>) Double::valueOf,
+                    double.class, (Function<String, Double>) Double::parseDouble, // double.class, (ToDoubleFunction<String>) Double::parseDouble,
+                    Integer.class, (Function<String, Integer>) Integer::valueOf,
+                    int.class, (Function<String, Integer>) Integer::parseInt, // int.class, (ToIntFunction<String>) Integer::parseInt,
+                    Long.class, (Function<String, Long>) Long::valueOf,
+                    long.class, (Function<String, Long>) Long::parseLong, // long.class, (ToLongFunction<String>) Long::parseLong,
+                    Float.class, (Function<String, Float>) Float::valueOf,
+                    float.class, (Function<String, Float>) Float::parseFloat,
+                    Date.class, (Function<String, Date>) s -> {
+                        try {
+                            return DateFormat.getDateInstance().parse(s);
+                        } catch (ParseException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+
+    private static Object parse(Parameter param, Function<String, String> valueExtractor) {
+        Class<?> type = param.getType();
+        String property = valueExtractor.apply(param.getName());
+        return PARSERS.get(type).apply(property);
     }
 }
