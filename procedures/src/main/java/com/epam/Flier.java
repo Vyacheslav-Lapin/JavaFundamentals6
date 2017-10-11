@@ -3,7 +3,7 @@ package com.epam;
 @FunctionalInterface
 public interface Flier {
 
-    int x = 1;
+    int X = 1;
 
     String getEggs(long l);
 
@@ -16,7 +16,7 @@ public interface Flier {
     }
 
     static void main(String... args) {
-        Flier flier = x -> "kjhbsg";
+        Flier flier = x -> "eggs";
         System.out.println(flier.getEggs(5L));
     }
 }

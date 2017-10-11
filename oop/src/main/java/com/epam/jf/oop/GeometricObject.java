@@ -1,9 +1,12 @@
-package com.epam;
+package com.epam.jf.oop;
+
+import lombok.EqualsAndHashCode;
 
 import java.util.Comparator;
 import java.util.Set;
 import java.util.TreeSet;
 
+@EqualsAndHashCode
 public abstract class GeometricObject {
 
     public abstract double getArea();

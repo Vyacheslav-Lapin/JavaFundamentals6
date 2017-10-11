@@ -14,6 +14,8 @@ public class Singleton {
 
     private static Singleton instance;
 
+    // Dbl-check locking
+    @SuppressWarnings("WeakerAccess")
     public static Singleton getInstance() {
         if (instance == null)
             synchronized (Singleton.class) {
@@ -23,6 +25,5 @@ public class Singleton {
 
         return instance;
     }
-
 
 }

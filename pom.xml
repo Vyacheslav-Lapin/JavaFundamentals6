@@ -11,6 +11,8 @@
     <modules>
         <module>procedures</module>
         <module>operators</module>
+        <module>oop</module>
+        <module>strings</module>
     </modules>
     <packaging>pom</packaging>
 

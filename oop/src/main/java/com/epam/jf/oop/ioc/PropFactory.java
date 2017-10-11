@@ -1,11 +1,10 @@
-package com.epam;
+package com.epam.jf.oop.ioc;
 
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.val;
 
-import java.io.File;
-import java.io.InputStream;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.text.DateFormat;
@@ -13,42 +12,46 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Map;
 import java.util.Properties;
-import java.util.function.*;
+import java.util.function.Function;
 
 @UtilityClass
 public class PropFactory {
 
-    private static final Function<String, InputStream> toInputStream =
-            PropFactory.class::getResourceAsStream;
-
-    private static final Function<String, String> toPath = name ->
+    private static final Function<String, String> toFileName = name ->
             String.format("/%s.properties", name);
 
     @SneakyThrows
-    private static Properties getProperties(String name) {
-        val path = toPath.apply(name);
-        assert new File(path).exists();
+    @SuppressWarnings("WeakerAccess")
+    public static <T> T getObject(Constructor<T> constructor) {
+        val parameters = constructor.getParameters();
+        int length = parameters.length;
+        val args = new Object[length];
 
-        try (val resourceAsStream = toInputStream.apply(path)) {
-            val properties = new Properties();
-            properties.load(resourceAsStream);
-            return properties;
-        }
+        val properties = new Properties() {
+            Properties load(String name) throws IOException {
+                val path = toFileName.apply(name);
+                assert PropFactory.class.getResource(path) != null;
+
+                try (val inputStream = PropFactory.class.getResourceAsStream(path)) {
+                    load(inputStream);
+                    return this;
+                }
+            }
+        }.load(constructor.getDeclaringClass().getSimpleName());
+
+        Function<String, String> valueExtractor = properties::getProperty;
+
+        for (int i = 0; i < length; i++)
+            args[i] = parse(parameters[i], valueExtractor);
+
+        return constructor.newInstance(args);
     }
 
     @SneakyThrows
     public static <T> T getObject(Class<T> aClass) {
-        val properties = getProperties(aClass.getSimpleName());
-
         //noinspection unchecked
         val constructor = (Constructor<T>) aClass.getConstructors()[0];
-        val parameters = constructor.getParameters();
-        int length = parameters.length;
-        val args = new Object[length];
-        for (int i = 0; i < length; i++)
-            args[i] = parse(parameters[i], properties::getProperty);
-
-        return constructor.newInstance(args);
+        return getObject(constructor);
     }
 
     private static Map<Class<?>, Function<String, ?>> PARSERS =

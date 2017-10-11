@@ -1,4 +1,4 @@
-package com.epam;
+package com.epam.jf.oop;
 
 public class RectangleGO extends GeometricObject {
     private double sideA;
