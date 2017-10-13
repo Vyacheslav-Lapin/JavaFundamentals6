@@ -28,10 +28,10 @@ public class PropFactory {
         val args = new Object[length];
 
         val properties = new Properties() {
-            Properties load(String name) throws IOException {
-                val path = toFileName.apply(name);
+            @SneakyThrows
+            Properties load(String className) {
+                val path = toFileName.apply(className);
                 assert PropFactory.class.getResource(path) != null;
-
                 try (val inputStream = PropFactory.class.getResourceAsStream(path)) {
                     load(inputStream);
                     return this;

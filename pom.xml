@@ -13,6 +13,7 @@
         <module>operators</module>
         <module>oop</module>
         <module>strings</module>
+        <module>io</module>
     </modules>
     <packaging>pom</packaging>
 
