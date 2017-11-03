@@ -17,10 +17,11 @@ public class ExecuteQueryToDBExample {
     public static final String SQL =
             "SELECT id, first_name, last_name, permission, dob, email, password, address, telephone FROM Person";
 
+    @SuppressWarnings("unchecked")
     private static Properties properties = new Properties() {
         public Properties load(String path) {
             try (InputStream resourceAsStream =
-                         ExecuteQueryToDBExample.class.getResourceAsStream(path)) {
+                         getClass().getResourceAsStream(path)) {
                 load(resourceAsStream);
             } catch (IOException ignored) {
                 // TODO: 03/11/2017 log
@@ -29,20 +30,21 @@ public class ExecuteQueryToDBExample {
         }
     }.load("/jdbc.properties");
 
-    public static void main(String... args) throws ClassNotFoundException, IOException, SQLException {
+    @SneakyThrows
+    public static void main(String... args) {
 
-        String driver = properties.getProperty("driver", "org.gjt.mm.mysql.Driver");
-        Class.forName(driver);
+        // Get and remove values
+        Class.forName((String) properties.remove("driver"));
+        String url = (String) properties.remove("url");
 
-        String initSql = getInitSql();
+        assert properties.size() >= 2;
+        assert properties.containsKey("user");
+        assert properties.containsKey("password");
 
-        String url = properties.getProperty("url", "jdbc:mysql://127.0.0.1/test");
-        String login = properties.getProperty("user", "root");
-        String password = properties.getProperty("password");
-        try (Connection con = DriverManager.getConnection(url, login, password);
+        try (Connection con = DriverManager.getConnection(url, properties);
              Statement st = con.createStatement()) {
 
-            st.execute(initSql);
+            st.execute(getInitSql());
 
             try (ResultSet rs = st.executeQuery(SQL)) {
                 while (rs.next()) {
