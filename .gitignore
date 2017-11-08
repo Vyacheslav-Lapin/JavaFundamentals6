@@ -1,4 +1,11 @@
 .gitignore
 .idea
 *.iml
+/**/out
+
+.gradle
+gradlew*
+gradle
+
 /**/target
+pom.xml

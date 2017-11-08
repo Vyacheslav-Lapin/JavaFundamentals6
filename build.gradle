@@ -1,0 +1,43 @@
+allprojects {
+    apply plugin: 'maven'
+
+    group = 'com.epam.jf'
+    version = '1.0-SNAPSHOT'
+}
+
+subprojects {
+    apply plugin: 'java'
+    sourceCompatibility = //9
+            targetCompatibility = 10
+
+    repositories {
+        flatDir { dirs './../lib' }
+        mavenLocal()
+        mavenCentral()
+    }
+
+
+    dependencies {
+        compile 'org.apache.logging.log4j:log4j-core:+',
+                'io.vavr:vavr:+'
+
+        testCompile 'org.junit.jupiter:junit-jupiter-params:+',
+                'org.hamcrest:java-hamcrest:+',
+                'org.mockito:mockito-all:+',
+                'junit:junit:+',
+                'org.junit.platform:junit-platform-launcher:+',
+                'org.junit.jupiter:junit-jupiter-engine:+',
+                'org.junit.vintage:junit-vintage-engine:+'
+        
+        compileOnly ':lombok-edge:', //'org.projectlombok:lombok:+',
+                'edu.washington.cs.types.checker:checker-framework:+'
+    }
+
+
+}
+
+task Wrapper(type: Wrapper) {
+    description = 'Generates gradlew[.bat] scripts'
+    gradleVersion = '4.3'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}

@@ -1,0 +1,8 @@
+rootProject.name = 'JavaFundamentals6'
+include ':procedures',
+        ':operators',
+        ':oop',
+        ':strings',
+        ':io',
+        ':concurrency',
+        ':db'

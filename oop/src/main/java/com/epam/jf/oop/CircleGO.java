@@ -23,9 +23,11 @@ public class CircleGO extends GeometricObject {
     /**
      * WARN!!! Use for tests only! Don`t use it for business-logic!
      */
+    @SuppressWarnings("unused")
     @SneakyThrows
-    public CircleGO setRadius(double radius) {
+    CircleGO setRadius(double radius) {
         Field field;
+        //noinspection JavaReflectionMemberAccess
         field = CircleGO.class.getField("radius");
         field.setAccessible(true);
         field.set(this, radius);

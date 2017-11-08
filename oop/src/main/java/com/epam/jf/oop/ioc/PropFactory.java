@@ -3,8 +3,9 @@ package com.epam.jf.oop.ioc;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import lombok.val;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Parameter;
 import java.text.DateFormat;
@@ -19,41 +20,6 @@ public class PropFactory {
 
     private static final Function<String, String> toFileName = name ->
             String.format("/%s.properties", name);
-
-    @SneakyThrows
-    @SuppressWarnings("WeakerAccess")
-    public static <T> T getObject(Constructor<T> constructor) {
-        val parameters = constructor.getParameters();
-        int length = parameters.length;
-        val args = new Object[length];
-
-        val properties = new Properties() {
-            @SneakyThrows
-            Properties load(String className) {
-                val path = toFileName.apply(className);
-                assert PropFactory.class.getResource(path) != null;
-                try (val inputStream = PropFactory.class.getResourceAsStream(path)) {
-                    load(inputStream);
-                    return this;
-                }
-            }
-        }.load(constructor.getDeclaringClass().getSimpleName());
-
-        Function<String, String> valueExtractor = properties::getProperty;
-
-        for (int i = 0; i < length; i++)
-            args[i] = parse(parameters[i], valueExtractor);
-
-        return constructor.newInstance(args);
-    }
-
-    @SneakyThrows
-    public static <T> T getObject(Class<T> aClass) {
-        //noinspection unchecked
-        val constructor = (Constructor<T>) aClass.getConstructors()[0];
-        return getObject(constructor);
-    }
-
     private static Map<Class<?>, Function<String, ?>> PARSERS =
             Map.of(String.class, (Function<String, String>) s -> s,
                     Double.class, (Function<String, Double>) Double::valueOf,
@@ -71,6 +37,45 @@ public class PropFactory {
                             throw new RuntimeException(e);
                         }
                     });
+
+    @SneakyThrows
+    @SuppressWarnings("WeakerAccess")
+    public static <T> T getObject(@NotNull Constructor<T> constructor) {
+        val parameters = constructor.getParameters();
+        int length = parameters.length;
+        val args = new Object[length];
+        val properties = getProperties(
+                constructor.getDeclaringClass().getSimpleName());
+
+        Function<String, String> valueExtractor = properties::getProperty;
+        for (int i = 0; i < length; i++)
+            args[i] = parse(parameters[i], valueExtractor);
+
+        return constructor.newInstance(args);
+    }
+
+    private static Properties getProperties(@NotNull String name) {
+        return new Properties() {
+            @SneakyThrows
+            Properties load(@NotNull String className) {
+                val path = toFileName.apply(className);
+                InputStream inputStream = PropFactory.class.getResourceAsStream(path);
+                if (inputStream != null)
+                    try (inputStream) {
+                        load(inputStream);
+                        return this;
+                    }
+                return null;
+            }
+        }.load(name);
+    }
+
+    @SneakyThrows
+    public static <T> T getObject(Class<T> aClass) {
+        //noinspection unchecked
+        val constructor = (Constructor<T>) aClass.getConstructors()[0];
+        return getObject(constructor);
+    }
 
     private static Object parse(Parameter param, Function<String, String> valueExtractor) {
         Class<?> type = param.getType();

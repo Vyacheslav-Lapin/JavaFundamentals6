@@ -5,9 +5,8 @@ public class Clicker extends Thread {
     private volatile boolean running = true;
 
     public void run() {
-        while (running) {
+        while (running)
             click++;
-        }
     }
 
     public void stopClick() {
