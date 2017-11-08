@@ -19,7 +19,7 @@ import java.util.function.Supplier;
 import static java.util.Optional.ofNullable;
 
 @Log4j2
-public class ConnectionPool implements Supplier<Connection>, Closeable {
+public class ConnectionPool implements JdbcConnectionPool, Closeable {
 
     private static final int DEFAULT_POOL_SIZE = 5;
 
