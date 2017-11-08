@@ -48,7 +48,7 @@ public class ExecuteQueryToDBExample {
 
             try (ResultSet rs = st.executeQuery(SQL)) {
                 while (rs.next()) {
-                    System.out.printf("%d %s%s%n",
+                    System.out.printf("%d %s %s%n",
                             rs.getInt("id"),
                             rs.getString("first_name"),
                             rs.getString("last_name"));

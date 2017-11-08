@@ -8,7 +8,7 @@ allprojects {
 subprojects {
     apply plugin: 'java'
     sourceCompatibility = //9
-            targetCompatibility = 10
+            targetCompatibility = 9
 
     repositories {
         flatDir { dirs './../lib' }
@@ -16,6 +16,9 @@ subprojects {
         mavenCentral()
     }
 
+    configurations {
+        testCompile.extendsFrom compileOnly
+    }
 
     dependencies {
         compile 'org.apache.logging.log4j:log4j-core:+',
@@ -38,6 +41,6 @@ subprojects {
 
 task Wrapper(type: Wrapper) {
     description = 'Generates gradlew[.bat] scripts'
-    gradleVersion = '4.3'
+    gradleVersion = '4.3.1'
     distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
 }

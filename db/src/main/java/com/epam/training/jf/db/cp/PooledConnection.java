@@ -16,25 +16,26 @@ public class PooledConnection implements Connection {
     private Consumer<PooledConnection> onClose;
 
     @SneakyThrows
-    public PooledConnection(Connection connection,
-                            Consumer<PooledConnection> onClose) {
+    PooledConnection(Connection connection,
+                     Consumer<PooledConnection> onClose) {
         this.connection = connection;
         this.onClose = onClose;
         connection.setAutoCommit(true);
     }
 
-    public void reallyClose() throws SQLException {
+    @SneakyThrows
+    public void reallyClose() {
         connection.close();
     }
 
     @Override
     public void close() throws SQLException {
-        if (connection.isClosed()) {
+        if (connection.isClosed())
             throw new SQLException("Attempting to close closed connection.");
-        }
-        if (connection.isReadOnly()) {
+
+        if (connection.isReadOnly())
             connection.setReadOnly(false);
-        }
+
         onClose.accept(this);
     }
 }

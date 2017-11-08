@@ -1,6 +1,7 @@
 package com.epam.training.jf.db.cp;
 
 import lombok.extern.log4j.Log4j2;
+import lombok.val;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -24,9 +25,11 @@ public class ConnectionPool implements Supplier<Connection>, Closeable {
 
     private BlockingQueue<PooledConnection> connectionQueue;
 
+    private boolean isClosed;
+
     public ConnectionPool(String jdbcPropertiesName) {
 
-        Properties properties = new Properties() {
+        val properties = new Properties() {
             public Properties load(String path) {
                 try (InputStream resourceAsStream =
                              getClass().getResourceAsStream(path)) {
@@ -60,8 +63,12 @@ public class ConnectionPool implements Supplier<Connection>, Closeable {
                 connectionQueue.add(
                         new PooledConnection(
                                 DriverManager.getConnection(url, properties),
-                                pooledConnection ->
-                                        connectionQueue.offer(pooledConnection)));
+                                pooledConnection -> {
+                                    if (isClosed)
+                                        pooledConnection.reallyClose();
+                                    else
+                                        connectionQueue.offer(pooledConnection);
+                                }));
 
         } catch (SQLException e) {
             throw new ConnectionPoolException("SQLException in ConnectionPool", e);
@@ -81,15 +88,12 @@ public class ConnectionPool implements Supplier<Connection>, Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
+        isClosed = true;
         for (Iterator<PooledConnection> iterator =
              connectionQueue.iterator(); iterator.hasNext(); ) {
-            try {
                 iterator.next().reallyClose();
                 iterator.remove();
-            } catch (SQLException e) {
-                log.error("Connection isn't return to the pool.");
-            }
         }
     }
 }
