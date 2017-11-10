@@ -8,7 +8,7 @@ allprojects {
 subprojects {
     apply plugin: 'java'
     sourceCompatibility = //9
-            targetCompatibility = 9
+            targetCompatibility = 10
 
     repositories {
         flatDir { dirs './../lib' }

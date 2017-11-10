@@ -1,80 +1,83 @@
 package com.epam.training.jf.db.cp;
 
+import com.epam.training.jf.db.common.ResourceProperties;
+import io.vavr.CheckedFunction1;
+import io.vavr.CheckedFunction2;
+import io.vavr.Function1;
+import io.vavr.Function2;
 import lombok.extern.log4j.Log4j2;
 import lombok.val;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static java.util.Optional.ofNullable;
 
 @Log4j2
 public class ConnectionPool implements JdbcConnectionPool, Closeable {
 
     private static final int DEFAULT_POOL_SIZE = 5;
 
+    private static final Function<String, Class<?>> loadClass =
+            ((CheckedFunction1<String, Class<?>>) Class::forName).unchecked();
+
+    private static final Function2<String, Properties, Connection> connectionFromUrlAndProps =
+            ((CheckedFunction2<String, Properties, Connection>) DriverManager::getConnection).unchecked();
+
+    static {
+        Locale.setDefault(Locale.ENGLISH);
+    }
+
     private BlockingQueue<PooledConnection> connectionQueue;
 
-    private boolean isClosed;
+    private volatile boolean isClosed;
 
+    private final Consumer<PooledConnection> onClose = pooledConnection -> {
+        if (isClosed)
+            pooledConnection.reallyClose();
+        else
+            connectionQueue.offer(pooledConnection);
+    };
+
+    public ConnectionPool(String jdbcPropertiesName, String resourceName) {
+        this(jdbcPropertiesName);
+        executeSql(resourceName);
+    }
+
+    @SuppressWarnings("WeakerAccess")
     public ConnectionPool(String jdbcPropertiesName) {
 
-        val properties = new Properties() {
-            public Properties load(String path) {
-                try (InputStream resourceAsStream =
-                             getClass().getResourceAsStream(path)) {
-                    load(resourceAsStream);
-                } catch (IOException ignored) {
-                    log.warn("Resource is unaccessible!");
-                }
-                return this;
-            }
-        }.load(jdbcPropertiesName);
+        val resourceProperties = new ResourceProperties(jdbcPropertiesName);
 
-        try {
-            // Get and remove values
-            Class.forName((String) properties.remove("driver"));
-            String url = (String) properties.remove("url");
+        //noinspection ResultOfMethodCallIgnored
+        resourceProperties.getAndRemove("driver")
+                .map(loadClass)
+                .orElseThrow(() -> new ConnectionPoolException("SQLException in ConnectionPool"));
 
-            int poolSize = ofNullable(
-                    (String) properties.remove("poolSize"))
-                    .map(Integer::parseInt)
-                    .orElse(DEFAULT_POOL_SIZE);
+        int poolSize = resourceProperties.getAndRemove("poolSize")
+                .map(Integer::parseInt)
+                .orElse(DEFAULT_POOL_SIZE);
 
-            Locale.setDefault(Locale.ENGLISH);
+        Function1<Properties, Connection> connectionFromProps =
+                resourceProperties.getAndRemove("url")
+                        .map(connectionFromUrlAndProps::apply)
+                        .orElseThrow(() -> new ConnectionPoolException("URL is not defined"));
 
-            assert properties.size() >= 2;
-            assert properties.containsKey("user");
-            assert properties.containsKey("password");
+        assert resourceProperties.containsKeysOnly("user", "password");
 
-            connectionQueue = new ArrayBlockingQueue<>(poolSize);
+        val properties = resourceProperties.getProperties();
+        Supplier<Connection> connectionSupplier = () -> connectionFromProps.apply(properties);
 
-            for (int i = 0; i < poolSize; i++)
-                connectionQueue.add(
-                        new PooledConnection(
-                                DriverManager.getConnection(url, properties),
-                                pooledConnection -> {
-                                    if (isClosed)
-                                        pooledConnection.reallyClose();
-                                    else
-                                        connectionQueue.offer(pooledConnection);
-                                }));
-
-        } catch (SQLException e) {
-            throw new ConnectionPoolException("SQLException in ConnectionPool", e);
-        } catch (ClassNotFoundException e) {
-            throw new ConnectionPoolException("Can't find database driver class", e);
-        }
+        connectionQueue = new ArrayBlockingQueue<>(poolSize);
+        for (int i = 0; i < poolSize; i++)
+            connectionQueue.add(new PooledConnection(connectionSupplier.get(), onClose));
     }
 
     @Override
@@ -82,18 +85,16 @@ public class ConnectionPool implements JdbcConnectionPool, Closeable {
         try {
             return connectionQueue.take();
         } catch (InterruptedException e) {
-            throw new ConnectionPoolException(
-                    "Error connecting to the data source.", e);
+            throw new ConnectionPoolException("Error connecting to the data source.", e);
         }
     }
 
     @Override
     public void close() {
         isClosed = true;
-        for (Iterator<PooledConnection> iterator =
-             connectionQueue.iterator(); iterator.hasNext(); ) {
-                iterator.next().reallyClose();
-                iterator.remove();
+        for (Iterator<PooledConnection> iterator = connectionQueue.iterator(); iterator.hasNext(); ) {
+            iterator.next().reallyClose();
+            iterator.remove();
         }
     }
 }

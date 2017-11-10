@@ -7,5 +7,5 @@
 gradlew*
 gradle
 
-/**/target
+**/target
 pom.xml

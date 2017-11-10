@@ -1,51 +1,22 @@
 package com.epam.training.jf.db.cp;
 
-import lombok.SneakyThrows;
+import com.epam.training.jf.db.model.Person;
 import org.junit.jupiter.api.Test;
-
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 class ConnectionPoolTest {
 
-    public static final String SQL =
+    //language=H2
+    private static final String SQL =
             "SELECT id, first_name, last_name, permission, dob, email, password, address, telephone FROM Person";
 
-    JdbcConnectionPool connectionPool =
-            new ConnectionPool("/jdbc.properties");
+    private JdbcConnectionPool connectionPool =
+            new ConnectionPool("/jdbc.properties", "/h2.sql");
 
     @Test
     void name() {
-        connectionPool.withStatement(st -> {
-            try {
-                st.execute(getInitSql());
-
-            try (ResultSet rs = st.executeQuery(SQL)) {
-                    while (rs.next()) {
-                        System.out.printf("%d %s %s%n",
-                                rs.getInt("id"),
-                                rs.getString("first_name"),
-                                rs.getString("last_name"));
-                    }
-                }
-
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        });
-    }
-
-    @SneakyThrows
-    private static String getInitSql() {
-        try (Stream<String> lines = Files.lines(
-                Paths.get("./src/main/resources/h2.sql"),
-                StandardCharsets.UTF_8)) {
-            return lines.collect(Collectors.joining());
-        }
+        connectionPool.withResultSet(rs -> {
+            while (rs.next())
+                System.out.println(Person.from(rs));
+        }, SQL);
     }
 }
