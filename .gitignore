@@ -6,6 +6,9 @@
 .gradle
 gradlew*
 gradle
+build
+
+domain
 
 **/target
 pom.xml

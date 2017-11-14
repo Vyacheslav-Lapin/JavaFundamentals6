@@ -6,3 +6,5 @@ include ':procedures',
         ':io',
         ':concurrency',
         ':db'
+include 'web'
+

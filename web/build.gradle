@@ -1,0 +1,8 @@
+group 'com.epam.jf'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'war'
+
+dependencies {
+    compileOnly 'org.apache.tomcat:tomcat-servlet-api:+'
+}
