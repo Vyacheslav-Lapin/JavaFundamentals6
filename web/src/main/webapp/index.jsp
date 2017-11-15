@@ -11,8 +11,10 @@
 <body>
 
 <ul>
-    <li><a href="/hello">Hello, World (to Log - not to browser)</a></li>
-    <li><a href="/StandaloneController">Hello, World (to browser)</a></li>
+    <li><a href="${pageContext.request.contextPath}/hello">Hello, World (to Log - not to browser)</a></li>
+    <li><a href="${pageContext.request.contextPath}/StandaloneController">Hello, World (to browser)</a></li>
+    <li><a href="${pageContext.request.contextPath}/main">Redirector</a></li>
+    <li><a href="${pageContext.request.contextPath}/http-redirect">Http-redirector</a></li>
 </ul>
 
 </body>

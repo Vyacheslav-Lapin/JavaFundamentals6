@@ -5,4 +5,5 @@ apply plugin: 'war'
 
 dependencies {
     compileOnly 'org.apache.tomcat:tomcat-servlet-api:+'
+    testCompile 'com.codeborne:selenide:+'
 }

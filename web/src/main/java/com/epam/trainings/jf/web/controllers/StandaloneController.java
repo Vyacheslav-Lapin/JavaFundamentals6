@@ -1,6 +1,5 @@
 package com.epam.trainings.jf.web.controllers;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -12,10 +11,10 @@ import java.io.PrintWriter;
 public class StandaloneController extends HttpServlet {
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-//        response.setStatus(408);
-        response.setContentType("text/html");
-        try (PrintWriter out = response.getWriter()) {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+//        resp.setStatus(408);
+        resp.setContentType("text/html");
+        try (PrintWriter out = resp.getWriter()) {
             out.println("<html><head>"
                     + "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
                     + "<title>Title</title>"
@@ -25,7 +24,7 @@ public class StandaloneController extends HttpServlet {
         }
     }
 
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         doGet(request, response);
     }
 }
