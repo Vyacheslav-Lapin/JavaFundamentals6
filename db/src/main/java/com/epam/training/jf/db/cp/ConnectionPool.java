@@ -25,17 +25,20 @@ public class ConnectionPool implements JdbcConnectionPool, Closeable {
 
     private static final int DEFAULT_POOL_SIZE = 5;
 
-    private static final Function<String, Class<?>> loadClass =
-            ((CheckedFunction1<String, Class<?>>) Class::forName).unchecked();
-
-    private static final Function2<String, Properties, Connection> connectionFromUrlAndProps =
-            ((CheckedFunction2<String, Properties, Connection>) DriverManager::getConnection).unchecked();
-
     static {
         Locale.setDefault(Locale.ENGLISH);
     }
 
     private BlockingQueue<PooledConnection> connectionQueue;
+
+    @Override
+    public Connection get() throws ConnectionPoolException {
+        try {
+            return connectionQueue.take();
+        } catch (InterruptedException e) {
+            throw new ConnectionPoolException("Error connecting to the data source.", e);
+        }
+    }
 
     private volatile boolean isClosed;
 
@@ -50,6 +53,14 @@ public class ConnectionPool implements JdbcConnectionPool, Closeable {
         this(jdbcPropertiesName);
         executeSql(resourceName);
     }
+
+
+
+    private static final Function<String, Class<?>> loadClass =
+            ((CheckedFunction1<String, Class<?>>) Class::forName).unchecked();
+
+    private static final Function2<String, Properties, Connection> connectionFromUrlAndProps =
+            ((CheckedFunction2<String, Properties, Connection>) DriverManager::getConnection).unchecked();
 
     @SuppressWarnings("WeakerAccess")
     public ConnectionPool(String jdbcPropertiesName) {
@@ -78,15 +89,6 @@ public class ConnectionPool implements JdbcConnectionPool, Closeable {
         connectionQueue = new ArrayBlockingQueue<>(poolSize);
         for (int i = 0; i < poolSize; i++)
             connectionQueue.add(new PooledConnection(connectionSupplier.get(), onClose));
-    }
-
-    @Override
-    public Connection get() throws ConnectionPoolException {
-        try {
-            return connectionQueue.take();
-        } catch (InterruptedException e) {
-            throw new ConnectionPoolException("Error connecting to the data source.", e);
-        }
     }
 
     @Override

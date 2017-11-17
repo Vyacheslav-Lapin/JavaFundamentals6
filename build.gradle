@@ -25,7 +25,6 @@ subprojects {
         testCompile 'org.junit.jupiter:junit-jupiter-params:+',
                 'org.hamcrest:java-hamcrest:+',
                 'org.mockito:mockito-all:+',
-//                'junit:junit:+',
                 'org.junit.platform:junit-platform-launcher:+',
                 'org.junit.jupiter:junit-jupiter-engine:+',
                 'org.junit.vintage:junit-vintage-engine:+'

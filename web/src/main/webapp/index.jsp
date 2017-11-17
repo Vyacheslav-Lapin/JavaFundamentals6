@@ -15,6 +15,7 @@
     <li><a href="${pageContext.request.contextPath}/StandaloneController">Hello, World (to browser)</a></li>
     <li><a href="${pageContext.request.contextPath}/main">Redirector</a></li>
     <li><a href="${pageContext.request.contextPath}/http-redirect">Http-redirector</a></li>
+    <li><a href="${pageContext.request.contextPath}/form">Login form</a></li>
 </ul>
 
 </body>
